@@ -1,0 +1,13 @@
+# Ignorar arquivos e diretórios desnecessários para o Docker
+vendor/
+node_modules/
+npm-debug.log
+.env
+.DS_Store
+.idea/
+*.log
+*.sqlite
+/public/storage
+/public/hot
+/public/mix-manifest.json
+/tests/
