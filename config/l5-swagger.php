@@ -2,10 +2,11 @@
 
 return [
     'default' => 'default',
+    'use_relative_path' => true,
     'documentations' => [
         'default' => [
             'api' => [
-                'title' => 'L5 Swagger UI',
+                'title' => 'BarberShop API',
             ],
 
             'routes' => [
@@ -18,7 +19,7 @@ return [
                 /*
                  * Edit to include full URL in ui for assets
                  */
-                'use_absolute_path' => env('L5_SWAGGER_USE_ABSOLUTE_PATH', true),
+                'use_absolute_path' => false,
 
                 /*
                 * Edit to set path where swagger ui assets should be stored
