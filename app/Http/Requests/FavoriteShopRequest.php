@@ -17,4 +17,12 @@ class FavoriteShopRequest extends FormRequest
             'shop_id' => 'required|exists:shops,id',
         ];
     }
+
+    public function messages()
+    {
+        return [
+            'shop_id.required' => __('messages.favorite.shop_required'),
+            'shop_id.exists' => __('messages.favorite.shop_not_found')
+        ];
+    }
 }
