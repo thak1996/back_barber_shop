@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ShopController;
 use App\Http\Controllers\ShopHourController;
 use App\Http\Controllers\ShopServiceController;
 use App\Http\Controllers\ShopReservationController;
@@ -17,16 +18,20 @@ use App\Http\Controllers\ReviewController;
 */
 
 // Public (auth)
-Route::post('auth/login', [AuthController::class, 'login']);
-Route::post('auth/forgot-password', [AuthController::class, 'forgotPassword']);
-Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('register', [AuthController::class, 'register']);
+Route::post('login', [AuthController::class, 'login']);
+Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('reset-password', [AuthController::class, 'resetPassword']);
 
 // Protected (JWT)
 Route::middleware('auth:api')->group(function () {
     // Auth
-    Route::post('auth/logout', [AuthController::class, 'logout']);
-    Route::post('auth/refresh', [AuthController::class, 'refresh']);
-    Route::get('auth/me', [AuthController::class, 'me']);
+    Route::post('logout', [AuthController::class, 'logout']);
+    Route::post('refresh', [AuthController::class, 'refresh']);
+    Route::get('me', [AuthController::class, 'me']);
+
+    // Shops
+    Route::apiResource('shops', ShopController::class);
 
     // Shop Hours
     Route::apiResource('shops.hours', ShopHourController::class)
