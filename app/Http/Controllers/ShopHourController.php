@@ -2,49 +2,159 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Shop;
+use App\Http\Requests\ShopHourRequest;
 use App\Models\ShopHour;
-use Illuminate\Validation\Rule;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
+/**
+ * @OA\Tag(
+ *     name="Shop Hours",
+ *     description="Shop hours management endpoints"
+ * )
+ */
 class ShopHourController extends Controller
 {
-    public function index(Shop $shop)
+    /**
+     * @OA\Get(
+     *     path="/api/shops/{shop}/hours",
+     *     summary="Get shop hours",
+     *     tags={"Shop Hours"},
+     *     @OA\Parameter(
+     *         name="shop",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of shop hours",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/ShopHour")
+     *         )
+     *     )
+     * )
+     */
+    public function index(Request $request, $shopId): JsonResponse
     {
-        return response()->json($shop->hours);
+        $shopHours = ShopHour::where('shop_id', $shopId)->get();
+        return response()->json($shopHours);
     }
 
-    public function store(Request $request, Shop $shop)
+    /**
+     * @OA\Post(
+     *     path="/api/shops/{shop}/hours",
+     *     summary="Create shop hours",
+     *     tags={"Shop Hours"},
+     *     @OA\Parameter(
+     *         name="shop",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/ShopHourRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Shop hours created successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/ShopHour")
+     *     )
+     * )
+     */
+    public function store(ShopHourRequest $request, $shopId): JsonResponse
     {
-        $this->authorize('update', $shop);
-        $data = $request->validate([
-            'weekday'     => ['required', 'integer', 'between:0,6', Rule::unique('shop_hours')->where(fn($q) => $q->where('shop_id', $shop->id))],
-            'open_time'   => 'required|date_format:H:i:s',
-            'lunch_start' => 'required|date_format:H:i:s',
-            'lunch_end'   => 'required|date_format:H:i:s',
-            'close_time'  => 'required|date_format:H:i:s',
+        $shopHour = ShopHour::create([
+            'shop_id' => $shopId,
+            'weekday' => $request->weekday,
+            'open_time' => $request->open_time,
+            'close_time' => $request->close_time,
+            'is_closed' => $request->is_closed ?? false
         ]);
-        $hour = $shop->hours()->create($data);
-        return response()->json($hour, 201);
+
+        return response()->json([
+            'message' => __('messages.shop_hours.created'),
+            'data' => $shopHour
+        ], 201);
     }
 
-    public function update(Request $request, Shop $shop, ShopHour $shopHour)
+    /**
+     * @OA\Put(
+     *     path="/api/shops/{shop}/hours/{hour}",
+     *     summary="Update shop hours",
+     *     tags={"Shop Hours"},
+     *     @OA\Parameter(
+     *         name="shop",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="hour",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/ShopHourRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Shop hours updated successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/ShopHour")
+     *     )
+     * )
+     */
+    public function update(ShopHourRequest $request, $shopId, $id): JsonResponse
     {
-        $this->authorize('update', $shop);
-        $data = $request->validate([
-            'open_time'   => 'sometimes|date_format:H:i:s',
-            'lunch_start' => 'sometimes|date_format:H:i:s',
-            'lunch_end'   => 'sometimes|date_format:H:i:s',
-            'close_time'  => 'sometimes|date_format:H:i:s',
+        $shopHour = ShopHour::where('shop_id', $shopId)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $shopHour->update($request->validated());
+
+        return response()->json([
+            'message' => __('messages.shop_hours.updated'),
+            'data' => $shopHour
         ]);
-        $shopHour->update($data);
-        return response()->json($shopHour);
     }
 
-    public function destroy(Shop $shop, ShopHour $shopHour)
+    /**
+     * @OA\Delete(
+     *     path="/api/shops/{shop}/hours/{hour}",
+     *     summary="Delete shop hours",
+     *     tags={"Shop Hours"},
+     *     @OA\Parameter(
+     *         name="shop",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="hour",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Shop hours deleted successfully"
+     *     )
+     * )
+     */
+    public function destroy($shopId, $id): JsonResponse
     {
-        $this->authorize('update', $shop);
+        $shopHour = ShopHour::where('shop_id', $shopId)
+            ->where('id', $id)
+            ->firstOrFail();
+
         $shopHour->delete();
-        return response()->noContent();
+
+        return response()->json([
+            'message' => __('messages.shop_hours.deleted')
+        ]);
     }
 }

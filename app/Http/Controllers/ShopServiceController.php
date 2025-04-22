@@ -2,42 +2,162 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Shop;
+use App\Http\Requests\ShopServiceRequest;
 use App\Models\ShopService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
+/**
+ * @OA\Tag(
+ *     name="Shop Services",
+ *     description="Shop services management endpoints"
+ * )
+ */
 class ShopServiceController extends Controller
 {
-    public function index(Shop $shop)
+    /**
+     * @OA\Get(
+     *     path="/api/shops/{shop}/services",
+     *     summary="Get all services for a shop",
+     *     tags={"Shop Services"},
+     *     @OA\Parameter(
+     *         name="shop",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of shop services",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/ShopService")
+     *         )
+     *     )
+     * )
+     */
+    public function index(Request $request, $shopId): JsonResponse
     {
-        $this->authorize('update', $shop);
-        return response()->json($shop->services);
-    }
+        $services = ShopService::where('shop_id', $shopId)
+            ->with('service')
+            ->get();
 
-    public function store(Request $request, Shop $shop)
-    {
-        $this->authorize('update', $shop);
-        $data = $request->validate([
-            'service_id' => 'required|exists:services,id',
-            'price'      => 'required|numeric|min:0',
+        return response()->json([
+            'data' => $services
         ]);
-        $shop->services()->attach($data['service_id'], ['price' => $data['price']]);
-        $service = $shop->services()->find($data['service_id']);
-        return response()->json($service, 201);
     }
 
-    public function update(Request $request, Shop $shop, ShopService $shopService)
+    /**
+     * @OA\Post(
+     *     path="/api/shops/{shop}/services",
+     *     summary="Add a service to shop",
+     *     tags={"Shop Services"},
+     *     @OA\Parameter(
+     *         name="shop",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/ShopServiceRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Service added successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/ShopService")
+     *     )
+     * )
+     */
+    public function store(ShopServiceRequest $request, $shopId): JsonResponse
     {
-        $this->authorize('update', $shop);
-        $data = $request->validate(['price' => 'required|numeric|min:0']);
-        $shopService->update($data);
-        return response()->json($shopService);
+        $service = ShopService::create([
+            'shop_id' => $shopId,
+            'service_id' => $request->service_id,
+            'price' => $request->price
+        ]);
+
+        return response()->json([
+            'message' => __('messages.shop_service.created'),
+            'data' => $service
+        ], 201);
     }
 
-    public function destroy(Shop $shop, ShopService $shopService)
+    /**
+     * @OA\Put(
+     *     path="/api/shops/{shop}/services/{service}",
+     *     summary="Update service price",
+     *     tags={"Shop Services"},
+     *     @OA\Parameter(
+     *         name="shop",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="service",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/ShopServiceRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Service price updated successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/ShopService")
+     *     )
+     * )
+     */
+    public function update(ShopServiceRequest $request, $shopId, $id): JsonResponse
     {
-        $this->authorize('update', $shop);
-        $shop->services()->detach($shopService->service_id);
-        return response()->noContent();
+        $service = ShopService::where('shop_id', $shopId)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $service->update($request->validated());
+
+        return response()->json([
+            'message' => __('messages.shop_service.updated'),
+            'data' => $service
+        ]);
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/api/shops/{shop}/services/{service}",
+     *     summary="Remove service from shop",
+     *     tags={"Shop Services"},
+     *     @OA\Parameter(
+     *         name="shop",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="service",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Service removed successfully"
+     *     )
+     * )
+     */
+    public function destroy($shopId, $id): JsonResponse
+    {
+        $service = ShopService::where('shop_id', $shopId)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $service->delete();
+
+        return response()->json([
+            'message' => __('messages.shop_service.deleted')
+        ]);
     }
 }

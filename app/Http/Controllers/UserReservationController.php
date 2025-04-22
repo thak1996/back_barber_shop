@@ -2,39 +2,134 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreReservationRequest;
+use App\Http\Requests\UpdateReservationRequest;
 use App\Models\Reservation;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
+/**
+ * @OA\Tag(
+ *     name="User Reservations",
+ *     description="User reservations management endpoints"
+ * )
+ */
 class UserReservationController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * @OA\Get(
+     *     path="/api/user/reservations",
+     *     summary="Get all reservations for the authenticated user",
+     *     tags={"User Reservations"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of user reservations",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/Reservation")
+     *         )
+     *     )
+     * )
+     */
+    public function index(Request $request): JsonResponse
     {
-        return response()->json($request->user()->reservations);
-    }
+        $reservations = $request->user()->reservations()
+            ->with(['shop', 'service'])
+            ->get();
 
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'shop_id'      => 'required|exists:shops,id',
-            'service_id'   => 'required|exists:services,id',
-            'scheduled_at' => 'required|date_format:Y-m-d H:i:s',
+        return response()->json([
+            'data' => $reservations
         ]);
-        $reservation = $request->user()->reservations()->create($data);
-        return response()->json($reservation, 201);
     }
 
-    public function update(Request $request, Reservation $reservation)
+    /**
+     * @OA\Post(
+     *     path="/api/user/reservations",
+     *     summary="Create a new reservation",
+     *     tags={"User Reservations"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/StoreReservationRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Reservation created successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/Reservation")
+     *     )
+     * )
+     */
+    public function store(StoreReservationRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+        $data['user_id'] = $request->user()->id;
+
+        $reservation = Reservation::create($data);
+
+        return response()->json([
+            'message' => __('messages.reservation.created'),
+            'data' => $reservation
+        ], 201);
+    }
+
+    /**
+     * @OA\Put(
+     *     path="/api/user/reservations/{reservation}",
+     *     summary="Update a reservation",
+     *     tags={"User Reservations"},
+     *     @OA\Parameter(
+     *         name="reservation",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/UpdateReservationRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Reservation updated successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/Reservation")
+     *     )
+     * )
+     */
+    public function update(UpdateReservationRequest $request, Reservation $reservation): JsonResponse
     {
         $this->authorize('update', $reservation);
-        $data = $request->validate(['scheduled_at' => 'required|date_format:Y-m-d H:i:s']);
-        $reservation->update($data);
-        return response()->json($reservation);
+
+        $reservation->update($request->validated());
+
+        return response()->json([
+            'message' => __('messages.reservation.updated'),
+            'data' => $reservation
+        ]);
     }
 
-    public function destroy(Reservation $reservation)
+    /**
+     * @OA\Delete(
+     *     path="/api/user/reservations/{reservation}",
+     *     summary="Delete a reservation",
+     *     tags={"User Reservations"},
+     *     @OA\Parameter(
+     *         name="reservation",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Reservation deleted successfully"
+     *     )
+     * )
+     */
+    public function destroy(Reservation $reservation): JsonResponse
     {
         $this->authorize('delete', $reservation);
+
         $reservation->delete();
-        return response()->noContent();
+
+        return response()->json([
+            'message' => __('messages.reservation.deleted')
+        ]);
     }
 }

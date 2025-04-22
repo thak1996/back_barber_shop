@@ -10,10 +10,10 @@ use OpenApi\Annotations as OA;
 /**
  * @OA\Info(
  *     version="1.0.0",
- *     title="My Laravel API",
- *     description="Documentation for my Laravel API using Swagger",
+ *     title="BarberShop API",
+ *     description="Documentation for the BarberShop API",
  *     @OA\Contact(
- *         email="dev@example.com"
+ *         email="franklyn_vs_@hotmail.com"
  *     )
  * )
  * @OA\SecurityScheme(
