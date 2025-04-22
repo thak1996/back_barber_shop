@@ -11,10 +11,10 @@
 
 ```
 # Comando de Permissão
-sudo chown -R $USER:$USER . 
+sudo chown -R $USER:$USER .
 
 # Buildar o projeto
-docker-compose up -d --build 
+docker-compose up -d --build
 
 # Excluir os Containers
 docker-compose down -v
@@ -22,8 +22,11 @@ docker-compose down -v
 # Executar comando dentro do container
 docker-compose exec app <Comand>
 
+#instalar dependencias
+docker-compose exec app composer install
+
 # Migrations e Seeders
-docker-compose exec app artisan migrate:fresh --seed
+docker-compose exec app php artisan migrate:fresh --seed
 
 # Comando para entrar no container
 docker-compose exec app bash

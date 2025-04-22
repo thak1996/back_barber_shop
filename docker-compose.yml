@@ -68,6 +68,7 @@ services:
       - app-network
     environment:
       - NGROK_AUTHTOKEN=${NGROK_TOKEN}
+    restart: unless-stopped
 
 networks:
   app-network:
